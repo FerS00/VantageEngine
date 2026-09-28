@@ -48,7 +48,7 @@ Un motor de sitios comerciales **white-label**: una misma interfaz que cualquier
 | S9 | **Búsqueda global** | `catalog` | Overlay con resultados instantáneos, teclado, sin resultados |
 | S10 | **Carrito** | `cart` | Drawer lateral + página; líneas mixtas (producto/paquete), cantidades, cupón (si `offers`), resumen con desglose lista/descuento/final, vacío |
 | S11 | **Checkout** | `checkout` | Modo **solicitud de cotización** (datos de contacto + canal preferido WhatsApp/Telegram/email) y modo **pago online** (si `payments`); invitado vs. cliente autenticado (solo pide campos faltantes); éxito con número de pedido; errores |
-| S12 | **Pago** | `payments` | Selección de proveedor, redirección/embebido, éxito, cancelado, pendiente |
+| S12 | **Pago** | `payments` | Mercado Pago Checkout Pro (redirección); pantallas de retorno éxito / pendiente (p. ej. pago en efectivo en tienda) / fallo, con reintento |
 | S13 | **Reservas** | `booking` | Elegir servicio → profesional (opcional) → día (calendario) → hora (slots) → datos → confirmación; gestionar/cancelar desde enlace; sin disponibilidad |
 | S14 | **Contacto** | `contact-form` | Formulario (nombre, email, canal, destino, mensaje), CAPTCHA, éxito, errores por campo, datos de contacto y mapa opcional |
 | S15 | **Auth de cliente** | `customer-accounts` | Login (contraseña → código OTP de 6 dígitos), registro (verificar email → crear contraseña), recuperar acceso; un solo componente por etapas |
@@ -117,7 +117,7 @@ Botón (primario, secundario, fantasma, peligro, solo icono; tamaños; cargando;
 
 - **Storefront:** limpio, orientado a producto, con mucho aire y jerarquía tipográfica fuerte; la personalidad la pone la marca del tenant.
 - **Studio/consola:** herramienta profesional, neutra, densa pero legible; la marca del tenant **no** tiñe el admin (solo el preview), para que el panel siempre sea usable aunque el cliente elija colores extremos.
-- **Tenant de demostración:** reinterpretación de Diesel Power Pro (industrial, oscuro, rojo) **o** una marca ficticia neutra — pendiente de decisión (ver plan §8). Debe existir un **segundo tenant** con estética opuesta para demostrar el white-label.
+- **Tenant de demostración:** **WebFer** (nombre provisional; su identidad visual se define en esta fase y es cambiable desde el Studio). Idioma de toda la interfaz —storefront y admin—: **inglés**; diseñar pensando en que el español (~20 % más largo) se activará después. Debe existir un **segundo tenant** con estética opuesta para demostrar el white-label.
 
 ## 8. Entregables esperados de la fase de diseño
 

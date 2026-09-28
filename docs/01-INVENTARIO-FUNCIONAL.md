@@ -96,10 +96,10 @@ Marcadas como *opcionales*; cada una es un feature flag independiente. Las dos p
 
 | Nueva capacidad | Módulo | Flag | Prioridad | Fase |
 |---|---|---|---|---|
-| **Pasarela de pago online** (Stripe, Mercado Pago, PayPal) vía `PaymentGateway` Strategy + webhooks idempotentes; convive con "solicitud de compra" | `payments` | `payments` (requiere `checkout`) | Alta | F10 |
+| **Pasarela de pago online** (Mercado Pago primero; Stripe/PayPal después) vía `PaymentGateway` Strategy + webhooks idempotentes; convive con "solicitud de compra" | `payments` | `payments` (requiere `checkout`) | Alta | F10 |
 | **Citas / reservas**: servicios, recursos/personal, horarios, excepciones, slots, confirmación y recordatorios | `booking` | `booking` | Alta | F11 |
 | **Studio de marca**: editor de identidad, tema con *preview* en vivo, contenido por vista, toggles de módulos | `platform` (admin) | Core | Alta | F4 |
-| **Multi-idioma** del contenido (es/en/…) con *fallback* | `content` | `i18n` | Media | F4 |
+| **Multi-idioma** del contenido (inglés por defecto; es/…) con *fallback* | `content` | `i18n` | Media | F4 |
 | **SEO dinámico**: metadatos por ruta, Open Graph, `sitemap.xml` y `robots.txt` generados | `content.seo` | Core | Media | F4 |
 | **Inventario/stock** opcional por producto (para bienes físicos) | `catalog.inventory` | `inventory` | Media | F15+ |
 | **Reseñas y valoraciones** con moderación | `engagement.reviews` | `reviews` | Baja | backlog |
@@ -117,4 +117,4 @@ Marcadas como *opcionales*; cada una es un feature flag independiente. Las dos p
 2. **Telegram deja de ser "el" canal**: es un `NotificationChannel` más (Telegram, email, WhatsApp Cloud API, webhook genérico).
 3. **Google Sheets deja de ser "la" fuente**: `CatalogSource` Strategy (Google Sheets público, CSV/XLSX subido). Se conserva la semántica de *preview → mappings → apply* y el *ownership* de campos.
 4. **La IA del asistente es un adaptador**: `AiChatProvider` (OpenAI, Ollama, Anthropic, Fake para tests). El modo guiado determinista siempre existe como *fallback*.
-5. **Nada de datos del dominio "diesel"** en el código: los datos de Diesel Power Pro pasan a ser un **tenant de demostración** (`seed` opcional) para probar que el motor reproduce la web anterior.
+5. **Nada de datos del dominio "diesel"** en el código: el tenant de demostración es **WebFer** (nombre provisional, cambiable desde el Studio). Opcionalmente, un *seed* con datos al estilo Diesel Power Pro sirve para probar que el motor reproduce la web anterior.

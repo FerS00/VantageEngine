@@ -53,7 +53,7 @@ flowchart LR
         API --> DB[(MySQL 8.4)]
         API --> FS[(Volumen media<br/>o S3/MinIO)]
     end
-    API -.->|Strategy| PAY[Stripe / Mercado Pago / PayPal]
+    API -.->|Strategy| PAY[Mercado Pago · Stripe / PayPal futuros]
     API -.->|Strategy| NOTIF[Telegram / Email Resend·SMTP / WhatsApp]
     API -.->|Strategy| AI[OpenAI / Ollama / Anthropic]
     API -.->|Strategy| SHEETS[Google Sheets / CSV]
@@ -225,9 +225,9 @@ erDiagram
 CREATE TABLE tenant (
     id              BIGINT UNSIGNED AUTO_INCREMENT,
     public_id       CHAR(26)     NOT NULL,
-    code            VARCHAR(50)  NOT NULL,              -- 'diesel-power-pro'
+    code            VARCHAR(50)  NOT NULL,              -- 'webfer'
     status          VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
-    default_locale  VARCHAR(10)  NOT NULL DEFAULT 'es',
+    default_locale  VARCHAR(10)  NOT NULL DEFAULT 'en',
     default_currency CHAR(3)     NOT NULL DEFAULT 'USD',
     timezone        VARCHAR(50)  NOT NULL DEFAULT 'UTC',
     created_at      DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -284,7 +284,7 @@ CREATE TABLE media_asset (
 -- V3__platform_identity.sql ----------------------------------------------
 CREATE TABLE brand_identity (
     tenant_id          BIGINT UNSIGNED NOT NULL,
-    display_name       VARCHAR(120) NOT NULL,           -- 'Diesel Power Pro'
+    display_name       VARCHAR(120) NOT NULL,           -- 'WebFer'
     legal_name         VARCHAR(200) NULL,
     tagline            VARCHAR(200) NULL,
     logo_asset_id      BIGINT UNSIGNED NULL,
@@ -355,7 +355,7 @@ CREATE TABLE theme (
 -- V5__platform_content.sql -----------------------------------------------
 CREATE TABLE tenant_locale (
     tenant_id  BIGINT UNSIGNED NOT NULL,
-    locale     VARCHAR(10) NOT NULL,                    -- BCP 47: 'es', 'en', 'es-MX'
+    locale     VARCHAR(10) NOT NULL,                    -- BCP 47: 'en' (por defecto), 'es', 'es-MX'
     is_enabled BOOLEAN     NOT NULL DEFAULT TRUE,
     CONSTRAINT pk_tenant_locale PRIMARY KEY (tenant_id, locale),
     CONSTRAINT fk_tenant_locale_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id)
@@ -708,7 +708,7 @@ function applyThemeToRoot(root: HTMLElement, t: ThemeTokens): void {
 export class ContentStore {
   private readonly entries = signal<Record<string, string>>({});
   private readonly loaded = new Set<string>();
-  readonly locale = signal<string>('es');
+  readonly locale = signal<string>('en');
 
   /** Devuelve un signal: la plantilla se actualiza sola si cambia el texto o el idioma. */
   text(key: string, params?: Record<string, unknown>): Signal<string> {
@@ -780,7 +780,7 @@ Tres niveles, cada uno con su herramienta (no mezclar):
 
 | Nivel | Qué controla | Mecanismo | Cambia en |
 |---|---|---|---|
-| **Instalación** (build/boot) | Si el código de una integración pesada se carga (p. ej. SDK de Stripe) | `@ConditionalOnProperty("vantage.modules.payments.enabled")` | Reinicio |
+| **Instalación** (build/boot) | Si el código de una integración pesada se carga (p. ej. SDK de Mercado Pago) | `@ConditionalOnProperty("vantage.modules.payments.enabled")` | Reinicio |
 | **Tenant** (runtime) | Si un módulo está disponible para ese negocio | `tenant_feature` + `FeatureFlagService` | Al instante, desde el Studio |
 | **Permiso** (runtime) | Si *este usuario* puede usarlo | RBAC (`permission.feature_code`) | Al instante |
 
@@ -860,11 +860,11 @@ public interface PaymentGateway {
     RefundResult refund(RefundCommand command);
 }
 
-@Component @ConditionalOnProperty(prefix = "vantage.payments.stripe", name = "enabled", havingValue = "true")
-class StripePaymentGateway implements PaymentGateway { … }
+@Component @ConditionalOnProperty(prefix = "vantage.payments.mercadopago", name = "enabled", havingValue = "true")
+class MercadoPagoPaymentGateway implements PaymentGateway { … }   // primer proveedor (ADR-0008)
 
-@Component
-class MercadoPagoPaymentGateway implements PaymentGateway { … }
+@Component @ConditionalOnProperty(prefix = "vantage.payments.stripe", name = "enabled", havingValue = "true")
+class StripePaymentGateway implements PaymentGateway { … }        // segundo proveedor (backlog)
 
 // Registry: elige la estrategia según la configuración del tenant
 @Component
@@ -1021,7 +1021,7 @@ Estimaciones orientativas para una persona a tiempo parcial (~20 h/semana).
 
 | Fase | Objetivo | Tareas clave | Entregable | Est. |
 |---|---|---|---|---|
-| **F10 · Pagos online** | Nuevo | `PaymentGateway` Strategy (Stripe Checkout primero; Mercado Pago segundo), credenciales cifradas por tenant, webhooks firmados e idempotentes, `OnlinePaymentCheckoutFlow`, estados de pago, reembolsos con permiso, modo TEST; página de éxito/cancelación | Pago de prueba end-to-end con Stripe CLI en local | 2–3 sem |
+| **F10 · Pagos online** | Nuevo | `PaymentGateway` Strategy con **Mercado Pago** como primer adaptador: **Checkout Pro** (preferencia → redirección → `back_urls`), notificaciones webhook validadas con la cabecera `x-signature` (HMAC con la clave secreta del webhook) y deduplicadas por id de notificación, consulta del pago por API antes de cambiar estado (nunca confiar solo en el webhook), `X-Idempotency-Key` en las llamadas salientes, reembolsos totales/parciales con permiso `PAYMENT_REFUND`; credenciales (`access_token`, secreto de webhook) cifradas por tenant; modo TEST con credenciales y usuarios de prueba; páginas éxito/pendiente/fallo. Stripe queda como segundo adaptador (backlog) reutilizando la misma interfaz | Pago de prueba end-to-end en sandbox de Mercado Pago (webhook expuesto en local con túnel, p. ej. `cloudflared`) | 2–3 sem |
 | **F11 · Citas y reservas** | Nuevo | Servicios, recursos/personal, reglas de disponibilidad + excepciones, cálculo de slots en la zona horaria del tenant, reserva con bloqueo anti-doble-reserva, cancelación/reprogramación por token, recordatorios por outbox, pago/depósito opcional vía `payments`; calendario admin | Dos reservas concurrentes al mismo slot → solo una gana (test) | 3 sem |
 | **F12 · Campañas de correo** | A13, P19 | Compositor por bloques seguros + tema de la marca, assets, audiencias por Specification, snapshot + outbox por destinatario, allowlist TEST, supresiones, baja one-click, webhooks firmados | Envío TEST a allowlist | 2 sem |
 | **F13 · Sincronización de catálogo** | A14 | `CatalogSource` Strategy (Google Sheets público, CSV/XLSX subido) + Template Method (fetch → parse → diff → preview → apply); mappings, bindings, ownership de campos, doble confirmación, scheduler opt-in con lock | Preview + APPLY con la plantilla de hoja documentada | 2 sem |
@@ -1247,9 +1247,11 @@ Convenciones: `*.page.ts` (rutas), `*.component.ts` (UI), `*.store.ts` (estado c
 | Integraciones externas inestables (pagos, IA, Telegram) | Media | Medio | Adapters con *circuit breaker*, outbox, modo Fake en tests |
 | Deriva de versiones (Angular/Spring cambian rápido) | Media | Bajo | Dependabot + fijar versiones LTS en F0 |
 
-**Decisiones que necesito de ti antes de F0** (ninguna bloquea la redacción de este plan):
+**Decisiones confirmadas (2026-09-28)** — cerradas antes de F0:
 
-1. Paquete base Java: propongo `dev.vantageengine` (alternativa: `com.fers00.vantage`).
-2. Idioma por defecto del tenant demo y si el admin estará en español, inglés o ambos.
-3. Primer proveedor de pagos: Stripe (mejor DX y modo test) o Mercado Pago (mercado LATAM).
-4. ¿El tenant demo reproduce Diesel Power Pro (con sus datos) o una marca ficticia neutra para el portafolio?
+| ADR | Decisión | Consecuencias en el plan |
+|---|---|---|
+| 0008 | Paquete base Java: **`dev.vantageengine`** | `groupId` Maven `dev.vantageengine`, artefacto `vantage-engine-api`; clase principal `dev.vantageengine.VantageEngineApplication` |
+| 0009 | Idioma: **inglés** por defecto en el storefront y **inglés** en el panel de administración | `tenant.default_locale = 'en'`; el *seed* crea el locale `en` (y `es` desactivado, listo para activar con `i18n`); los textos del Studio/consola son los del namespace `admin` en inglés; código, commits, API y mensajes de error en inglés. La documentación de planificación sigue en español |
+| 0010 | Primer proveedor de pagos: **Mercado Pago** (Checkout Pro); Stripe pasa a backlog | Ver F10. **Restricción de moneda:** Mercado Pago cobra en la moneda local de la cuenta (MXN, ARS, BRL, CLP, COP, PEN, UYU); si el tenant vende en USD (como VENTAS_DPP), el módulo `payments` valida al activarse que `tenant.default_currency` coincida con la moneda de la cuenta, o exige la tasa de conversión de `multi-currency`. El país/moneda de la cuenta de Mercado Pago queda como dato de configuración de `payments` |
+| 0011 | Tenant de demostración: **WebFer** (`code = 'webfer'`), nombre **provisional** | Es solo *seed* (`db/seed/demo`): nombre, logo, tema y textos se cambian desde el Studio sin tocar código. Se mantiene un segundo tenant de ejemplo con estética opuesta para demostrar el white-label |
