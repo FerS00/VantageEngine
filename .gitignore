@@ -1,0 +1,28 @@
+# Local configuration and secrets
+.env
+.env.local
+.env.production
+.env.*
+!.env.example
+secrets/
+.secrets/
+*.pfx
+*.p12
+*.key
+*.pem
+
+# Build output and dependencies
+build/
+dist/
+bin/
+obj/
+target/
+node_modules/
+.angular/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
